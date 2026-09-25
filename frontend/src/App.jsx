@@ -57,9 +57,9 @@ export default function App() {
         <main className="flex-1 p-5 md:p-6 overflow-y-auto bg-slate-50 max-w-7xl mx-auto w-full">
           {activeTab === 'dashboard' && <DashboardPage onNavigateTab={setActiveTab} />}
           {activeTab === 'live' && <LiveCameraPage />}
-          {activeTab === 'upload' && <UploadVideoPage />}
-          {activeTab === 'history' && <HistoryPage />}
-          {activeTab === 'events' && <TrafficEventsPage />}
+          {activeTab === 'upload' && <UploadVideoPage onNavigateTab={setActiveTab} />}
+          {activeTab === 'history' && <HistoryPage onNavigateTab={setActiveTab} />}
+          {activeTab === 'events' && <TrafficEventsPage onNavigateTab={setActiveTab} />}
           {activeTab === 'analytics' && <AnalyticsPage />}
           {activeTab === 'settings' && <SettingsPage />}
         </main>

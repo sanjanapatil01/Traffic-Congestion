@@ -19,8 +19,8 @@ from backend.ai.recommendation_service import ai_service
 from backend.database.db import db_manager
 
 class TrafficEventManager:
-    def __init__(self, interval_seconds=60):
-        self.interval_seconds = interval_seconds  # Default 1 minute (60s)
+    def __init__(self, interval_seconds=15):
+        self.interval_seconds = interval_seconds  # Adaptive 15s interval for responsive demonstration
         self.camera_id = "CAM-01"
         self.input_type = "VIDEO_UPLOAD"
 
@@ -235,6 +235,37 @@ class TrafficEventManager:
         self.previous_congestion_level = interval_congestion
         self.latest_one_minute_record = saved_record
         print(f"[TrafficEventManager] 1-Min Status Generated: {interval_congestion} ({avg_total} vehicles, {avg_occupancy}% occ, {avg_movement} px/s)")
+        return saved_record
+
+    def flush_current_buffer(self, force=False):
+        """
+        Immediately aggregates buffered frames and writes a record to the database.
+        Called on stream stop, video loop/end, or manual operator log.
+        """
+        if self.frame_buffer:
+            saved = self._generate_interval_status()
+            self.frame_buffer.clear()
+            self.interval_start_time = time.time()
+            return saved
+        elif force and self.current_realtime_status:
+            now = time.time()
+            self.frame_buffer.append({
+                "timestamp": now,
+                "cars": self.current_realtime_status.get("cars", 0),
+                "motorcycles": self.current_realtime_status.get("motorcycles", 0),
+                "buses": self.current_realtime_status.get("buses", 0),
+                "trucks": self.current_realtime_status.get("trucks", 0),
+                "total_vehicles": self.current_realtime_status.get("total_vehicles", 0),
+                "average_movement": self.current_realtime_status.get("average_movement", 0.0),
+                "road_occupancy": self.current_realtime_status.get("road_occupancy", 0.0),
+                "congestion_level": self.current_realtime_status.get("congestion_level", "LOW"),
+                "confidence": self.current_realtime_status.get("confidence", 0.95)
+            })
+            saved = self._generate_interval_status()
+            self.frame_buffer.clear()
+            self.interval_start_time = now
+            return saved
+        return None
 
     def acknowledge_current_alert(self) -> dict:
         """
@@ -267,4 +298,4 @@ class TrafficEventManager:
         return {"status": "No active event"}
 
 # Global singleton
-event_manager = TrafficEventManager(interval_seconds=60)
+event_manager = TrafficEventManager(interval_seconds=15)

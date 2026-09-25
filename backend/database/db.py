@@ -282,5 +282,29 @@ class DatabaseManager:
         finally:
             session.close()
 
+    def clear_all_events(self):
+        """Clears all historical traffic records and events."""
+        session = self.get_session()
+        try:
+            deleted = session.query(TrafficEvent).delete()
+            session.commit()
+            print(f"[Database] Purged {deleted} traffic records from database.")
+            return {"status": "cleared", "deleted_count": deleted}
+        except Exception as e:
+            session.rollback()
+            print(f"[Database] Error purging events: {e}")
+            raise e
+        finally:
+            session.close()
+
+    def get_distinct_corridors(self):
+        """Returns list of distinct camera/video corridor names from records."""
+        session = self.get_session()
+        try:
+            results = session.query(TrafficEvent.camera_id).distinct().all()
+            return [r[0] for r in results if r[0]]
+        finally:
+            session.close()
+
 # Global database manager instance
 db_manager = DatabaseManager()

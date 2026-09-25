@@ -18,7 +18,7 @@ export const api = {
     return res.json();
   },
 
-  startAnalysis: async (sourceType, videoPath = null, cameraIndex = 0) => {
+  startAnalysis: async (sourceType, videoPath = null, cameraIndex = 0, videoName = null) => {
     const res = await fetch(`${API_BASE}/analysis/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -26,11 +26,29 @@ export const api = {
         source_type: sourceType,
         video_path: videoPath,
         camera_index: cameraIndex,
+        video_name: videoName,
       }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Failed to start analysis' }));
       throw new Error(err.error || 'Failed to start analysis');
+    }
+    return res.json();
+  },
+
+  analyzeFullVideo: async ({ video_path, video_name = null, interval_seconds = 20 }) => {
+    const res = await fetch(`${API_BASE}/video/analyze-full`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        video_path,
+        video_name,
+        interval_seconds,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Full video analysis failed' }));
+      throw new Error(err.error || 'Full video analysis failed');
     }
     return res.json();
   },
@@ -124,6 +142,23 @@ export const api = {
 
   getHealth: async () => {
     const res = await fetch(`${API_BASE}/health`);
+    return res.json();
+  },
+
+  recordNow: async () => {
+    const res = await fetch(`${API_BASE}/traffic/record-now`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to record current interval');
+    return res.json();
+  },
+
+  clearHistory: async () => {
+    const res = await fetch(`${API_BASE}/traffic/clear`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to clear records');
+    return res.json();
+  },
+
+  getCorridors: async () => {
+    const res = await fetch(`${API_BASE}/corridors`);
     return res.json();
   },
 };

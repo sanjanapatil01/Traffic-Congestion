@@ -70,14 +70,15 @@ def start_analysis():
     source_type = data.get('source_type', 'VIDEO').upper()  # 'VIDEO' or 'CAMERA' or 'SAMPLE'
     video_path = data.get('video_path')
     camera_index = data.get('camera_index', 0)
+    video_name = data.get('video_name') or data.get('title')
 
     try:
         if source_type == 'SAMPLE':
             current_dir = os.path.dirname(os.path.abspath(__file__))
             root_dir = os.path.dirname(os.path.dirname(current_dir))
             sample_path = os.path.join(root_dir, "ml", "videos", "sample_traffic.mp4")
-            video_service.start_video_analysis(sample_path)
-            return jsonify({"message": "Sample traffic video analysis started", "source": "SAMPLE", "path": sample_path})
+            video_service.start_video_analysis(sample_path, video_title="sample_traffic.mp4")
+            return jsonify({"message": "Sample traffic video analysis started", "source": "SAMPLE", "path": sample_path, "video_name": "sample_traffic.mp4"})
 
         elif source_type == 'CAMERA':
             video_service.start_camera_analysis(camera_index)
@@ -86,9 +87,30 @@ def start_analysis():
         else: # VIDEO
             if not video_path:
                 return jsonify({"error": "Missing video_path for video analysis"}), 400
-            video_service.start_video_analysis(video_path)
-            return jsonify({"message": "Video analysis started", "source": "VIDEO", "path": video_path})
+            video_service.start_video_analysis(video_path, video_title=video_name)
+            return jsonify({"message": "Video analysis started", "source": "VIDEO", "path": video_path, "video_name": video_name})
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# 2b. Analyze Full Video (Batch Mode)
+@api_bp.route('/video/analyze-full', methods=['POST'])
+def analyze_full_video_route():
+    data = request.get_json(silent=True) or {}
+    video_path = data.get('video_path')
+    video_name = data.get('video_name') or data.get('title')
+    interval_seconds = int(data.get('interval_seconds', 20))
+
+    if not video_path:
+        return jsonify({"error": "Missing video_path"}), 400
+
+    try:
+        result = video_service.analyze_full_video(
+            video_path=video_path,
+            video_title=video_name,
+            interval_seconds=interval_seconds
+        )
+        return jsonify(result), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -144,6 +166,40 @@ def get_current_traffic():
     # Check if active high event is recorded
     active_ev = db_manager.get_latest_active_high_event()
     status["active_high_event"] = active_ev
+
+    # Fetch latest stored record
+    latest_db_record = db_manager.get_history(page=1, limit=1)
+    latest_evt = latest_db_record['events'][0] if latest_db_record.get('events') else None
+    status["latest_record"] = latest_evt
+
+    # If stream is idle or telemetry has no vehicles, populate with latest analysis record
+    curr_telem = status.get("telemetry") or {}
+    if not status.get("is_running") or not curr_telem.get("total_vehicles"):
+        if latest_evt:
+            status["telemetry"] = {
+                "cars": latest_evt.get("cars", 0),
+                "motorcycles": latest_evt.get("motorcycles", 0),
+                "buses": latest_evt.get("buses", 0),
+                "trucks": latest_evt.get("trucks", 0),
+                "total_vehicles": latest_evt.get("total_vehicles", 0),
+                "average_movement": latest_evt.get("average_movement", 0.0),
+                "road_occupancy": latest_evt.get("road_occupancy", 0.0),
+                "congestion_level": latest_evt.get("congestion_level", "LOW"),
+                "confidence": latest_evt.get("confidence", 0.95),
+                "is_alert_blinking": latest_evt.get("status") == "ACTIVE" and latest_evt.get("congestion_level") == "HIGH",
+                "active_event": latest_evt if latest_evt.get("status") == "ACTIVE" and latest_evt.get("congestion_level") == "HIGH" else None,
+                "camera_id": latest_evt.get("camera_id", "CAM-01"),
+                "input_type": latest_evt.get("input_type", "VIDEO_UPLOAD"),
+                "recorded_at": latest_evt.get("timestamp"),
+                "ai_summary": latest_evt.get("ai_summary", ""),
+                "ai_reason": latest_evt.get("ai_reason", ""),
+                "ai_recommendation": latest_evt.get("ai_recommendation", ""),
+                "latest_record": latest_evt
+            }
+            if not status.get("source_type") or status["source_type"] == "NONE":
+                status["source_type"] = latest_evt.get("input_type", "VIDEO_UPLOAD")
+                status["source_title"] = latest_evt.get("camera_id", "Uploaded Video")
+
     return jsonify(status)
 
 # 8. Get Traffic History with Pagination & Filters
@@ -165,6 +221,36 @@ def get_traffic_history():
         status_filter=status_filter
     )
     return jsonify(history_data)
+
+# 8b. Record Current Analysis Interval Immediately
+@api_bp.route('/traffic/record-now', methods=['POST'])
+def record_traffic_now():
+    try:
+        saved = event_manager.flush_current_buffer(force=True)
+        if saved:
+            return jsonify({"message": "Current analysis interval recorded successfully", "record": saved}), 200
+        return jsonify({"message": "No active telemetry to record", "record": None}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# 8c. Clear All Traffic History and Events
+@api_bp.route('/traffic/clear', methods=['POST'])
+def clear_traffic_history():
+    try:
+        res = db_manager.clear_all_events()
+        event_manager.reset_session()
+        return jsonify({"message": "All history records and traffic events cleared", "details": res}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# 8d. Get List of Corridors / Video Sources
+@api_bp.route('/corridors', methods=['GET'])
+def get_corridors():
+    try:
+        corridors = db_manager.get_distinct_corridors()
+        return jsonify({"corridors": corridors}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # 9. Get Events List
 @api_bp.route('/events', methods=['GET'])

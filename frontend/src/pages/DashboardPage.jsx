@@ -8,8 +8,10 @@ import {
   Square, 
   Pause, 
   Video, 
-  Sparkles,
-  ParkingSquare
+  BookmarkCheck, 
+  CheckCircle2, 
+  History, 
+  UploadCloud 
 } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import RedBlinkingAlert from '../components/RedBlinkingAlert';
@@ -25,6 +27,7 @@ export default function DashboardPage({ onNavigateTab }) {
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
+  const [recordToast, setRecordToast] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -59,7 +62,7 @@ export default function DashboardPage({ onNavigateTab }) {
   const handleStartSample = async () => {
     setLoadingAction(true);
     try {
-      await api.startAnalysis('SAMPLE');
+      await api.startAnalysis('SAMPLE', null, 0, 'sample_traffic.mp4');
       setIsRunning(true);
       setIsPaused(false);
     } catch (err) {
@@ -83,6 +86,22 @@ export default function DashboardPage({ onNavigateTab }) {
       await api.stopAnalysis();
       setIsRunning(false);
       setIsPaused(false);
+      setRecordToast('Analysis stopped. Buffer flushed and written to History.');
+      setTimeout(() => setRecordToast(''), 4000);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRecordNow = async () => {
+    try {
+      const res = await api.recordNow();
+      if (res?.record) {
+        setRecordToast(`Interval #${res.record.id} recorded for ${res.record.camera_id}.`);
+      } else {
+        setRecordToast('Current snapshot recorded to History.');
+      }
+      setTimeout(() => setRecordToast(''), 4000);
     } catch (err) {
       console.error(err);
     }
@@ -106,6 +125,13 @@ export default function DashboardPage({ onNavigateTab }) {
           }
         }}
       />
+
+      {recordToast && (
+        <div className="p-3.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 text-xs flex items-center space-x-2 font-medium">
+          <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0" />
+          <span>{recordToast}</span>
+        </div>
+      )}
 
       {/* Top 4 Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -168,26 +194,26 @@ export default function DashboardPage({ onNavigateTab }) {
       {/* Main Grid: Live Video Stream & AI Recommendation Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left 2 Cols: Live Video View */}
-        <div className="lg:col-span-2 p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-2 p-5 rounded-2xl bg-white border border-sky-100 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-2.5">
-                <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
+                <div className="p-2 rounded-xl bg-sky-50 text-sky-600 border border-sky-100">
                   <Video className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-slate-900 tracking-wide uppercase">
-                    Live Traffic CCTV Feed
+                  <h2 className="text-sm font-bold text-black tracking-wide uppercase">
+                    Corridor Video Monitoring Feed
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Real-time vehicle detection with active corridor filtering
+                    {telemetry.camera_id ? `Source: ${telemetry.camera_id}` : 'Real-time vehicle detection with active corridor filtering'}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center space-x-2">
                 <span className={`w-2 h-2 rounded-full ${isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-                <span className="text-xs font-semibold text-slate-700">
+                <span className="text-xs font-bold text-black">
                   {isRunning ? (isPaused ? 'PAUSED' : 'PROCESSING') : 'STANDBY'}
                 </span>
               </div>
@@ -203,29 +229,41 @@ export default function DashboardPage({ onNavigateTab }) {
                 />
               ) : (
                 <div className="text-center p-8 space-y-3 bg-slate-900 w-full h-full flex flex-col items-center justify-center">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400">
-                    <Video className="w-7 h-7" />
+                  <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-sky-400">
+                    <Video className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-200">Video Stream Standby</h3>
-                    <p className="text-xs text-slate-400 mt-0.5 max-w-sm mx-auto">
-                      Click below to start expressway traffic analysis or upload a video.
-                    </p>
+                    <h3 className="text-sm font-bold text-white">Video Feed Standby</h3>
+                    {telemetry.camera_id ? (
+                      <p className="text-xs text-sky-300 mt-1 max-w-sm mx-auto font-medium">
+                        Latest analysis from: <strong className="text-white">{telemetry.camera_id}</strong>
+                        {telemetry.recorded_at && (
+                          <span className="block text-[11px] text-slate-400 mt-0.5">
+                            Recorded at {new Date(telemetry.recorded_at).toLocaleTimeString()}
+                          </span>
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-400 mt-0.5 max-w-sm mx-auto">
+                        Click below to start expressway traffic analysis or upload a video.
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center justify-center gap-2.5 pt-1">
                     <button
                       onClick={handleStartSample}
                       disabled={loadingAction}
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer"
+                      className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition flex items-center gap-2 shadow-xs cursor-pointer"
                     >
                       <Play className="w-4 h-4 fill-white" />
                       <span>{loadingAction ? 'Starting...' : 'Start Demo Stream'}</span>
                     </button>
                     <button
                       onClick={() => onNavigateTab && onNavigateTab('upload')}
-                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition cursor-pointer border border-slate-700"
+                      className="px-4 py-2 rounded-xl bg-white hover:bg-sky-50 text-black text-xs font-bold transition cursor-pointer border border-sky-200 shadow-xs flex items-center gap-1.5"
                     >
-                      Upload Video
+                      <UploadCloud className="w-4 h-4 text-sky-600" />
+                      <span>Upload Video</span>
                     </button>
                   </div>
                 </div>
@@ -240,7 +278,7 @@ export default function DashboardPage({ onNavigateTab }) {
                 <button
                   onClick={handleStartSample}
                   disabled={loadingAction}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5 fill-white" />
                   <span>Start Analysis</span>
@@ -249,7 +287,7 @@ export default function DashboardPage({ onNavigateTab }) {
                 <>
                   <button
                     onClick={handlePause}
-                    className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-slate-200"
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-black text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-slate-200"
                   >
                     <Pause className="w-3.5 h-3.5" />
                     <span>{isPaused ? 'Resume' : 'Pause'}</span>
@@ -265,17 +303,25 @@ export default function DashboardPage({ onNavigateTab }) {
               )}
 
               <button
+                onClick={handleRecordNow}
+                className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <BookmarkCheck className="w-3.5 h-3.5 text-sky-600" />
+                <span>Save Interval to History</span>
+              </button>
+
+              <button
                 onClick={() => onNavigateTab && onNavigateTab('upload')}
-                className="px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold transition cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold transition cursor-pointer"
               >
                 Change Video
               </button>
             </div>
 
             <div className="text-xs text-slate-500 font-mono flex items-center gap-2">
-              <span>Active Tracks: <strong className="text-slate-800">{telemetry.active_tracks || 0}</strong></span>
+              <span>Active Tracks: <strong className="text-black font-bold">{telemetry.active_tracks || 0}</strong></span>
               <span>•</span>
-              <span>Model: <strong className="text-blue-600">YOLOv8n</strong></span>
+              <span>Model: <strong className="text-sky-700 font-bold">YOLOv8n</strong></span>
             </div>
           </div>
         </div>
@@ -283,12 +329,23 @@ export default function DashboardPage({ onNavigateTab }) {
         {/* Right 1 Col: AI Recommendation Card */}
         <div className="lg:col-span-1">
           <AIRecommendationCard
-            recommendation={telemetry.latest_record ? {
-              summary: telemetry.latest_record.ai_summary,
-              reason: telemetry.latest_record.ai_reason,
-              recommendation: telemetry.latest_record.ai_recommendation,
-              priority: telemetry.latest_record.priority,
-            } : null}
+            recommendation={
+              telemetry.latest_record
+                ? {
+                    summary: telemetry.latest_record.ai_summary,
+                    reason: telemetry.latest_record.ai_reason,
+                    recommendation: telemetry.latest_record.ai_recommendation,
+                    priority: telemetry.latest_record.priority,
+                  }
+                : (telemetry.ai_summary
+                ? {
+                    summary: telemetry.ai_summary,
+                    reason: telemetry.ai_reason,
+                    recommendation: telemetry.ai_recommendation,
+                    priority: telemetry.priority || congLevel,
+                  }
+                : null)
+            }
             intervalSecondsRemaining={telemetry.interval_seconds_remaining}
             intervalProgress={telemetry.interval_progress}
             congestionLevel={congLevel}
@@ -302,10 +359,10 @@ export default function DashboardPage({ onNavigateTab }) {
       {/* Bottom Grid: Live Status Timeline & Vehicle Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left 2 Cols: Live Status Timeline */}
-        <div className="lg:col-span-2 p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+        <div className="lg:col-span-2 p-5 rounded-2xl bg-white border border-sky-100 shadow-xs">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h3 className="text-xs font-bold text-slate-900 tracking-wide uppercase">
+              <h3 className="text-xs font-bold text-black tracking-wide uppercase">
                 Congestion Trend Timeline
               </h3>
               <p className="text-[11px] text-slate-500">
@@ -318,9 +375,9 @@ export default function DashboardPage({ onNavigateTab }) {
         </div>
 
         {/* Right 1 Col: Vehicle Distribution Breakdown */}
-        <div className="lg:col-span-1 p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+        <div className="lg:col-span-1 p-5 rounded-2xl bg-white border border-sky-100 shadow-xs">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="text-xs font-bold text-slate-900 tracking-wide uppercase">
+            <h3 className="text-xs font-bold text-black tracking-wide uppercase">
               Vehicle Distribution
             </h3>
           </div>
