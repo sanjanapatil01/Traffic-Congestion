@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="skyFlowGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0369a1" />
+      <stop offset="35%" stop-color="#0284c7" />
+      <stop offset="70%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#60a5fa" />
+    </linearGradient>
+    <linearGradient id="accentDot" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+  </defs>
+  <!-- Stylized Modern Traffic Flow Arc -->
+  <path d="M10 50 C18 24, 25 10, 32 10 C39 10, 46 24, 54 50 C46 42, 39 38, 32 38 C25 38, 18 42, 10 50 Z" fill="url(#skyFlowGrad)" />
+  <circle cx="32" cy="24" r="4.5" fill="url(#accentDot)" />
+</svg>

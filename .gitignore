@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+
+# Virtual Environments
+venv/
+env/
+.venv/
+
+# Node.js / Frontend
+node_modules/
+frontend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment configuration (keep .env.example)
+.env
+.env.local
+
+# Local SQLite databases (created dynamically)
+*.sqlite
+*.sqlite3
+database/smart_traffic.db
+
+# Uploaded test videos (keeps sample_traffic.mp4)
+ml/videos/[0-9]*_*
+
+# Operating System files
+Thumbs.db
+.DS_Store
+desktop.ini
