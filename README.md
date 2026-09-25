@@ -125,19 +125,6 @@ cd ..
 
 ## 5. Running in Visual Studio Code (VS Code)
 
-This repository includes pre-configured VS Code workspace configurations in `.vscode/launch.json` and `.vscode/tasks.json`.
-
-### Option A: One-Click Run via VS Code Run & Debug (F5)
-1. Open the project folder in VS Code:
-   ```powershell
-   code C:\Users\hp\.gemini\antigravity\scratch\smart-traffic-system
-   ```
-2. Click on the **Run and Debug** icon in the left activity bar (or press `Ctrl + Shift + D`).
-3. Select **"Python: Start Traffic System Backend"** from the dropdown menu at the top.
-4. Press `F5` (or click the green Play button).
-5. Open your web browser at **`http://127.0.0.1:5000`** to view the live dashboard.
-
-### Option B: Running from VS Code Integrated Terminal
 Open a new integrated terminal (`Ctrl + ~`) in VS Code:
 
 1. **Start Backend & Web Application**:
