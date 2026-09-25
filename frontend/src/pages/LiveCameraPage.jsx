@@ -257,7 +257,7 @@ export default function LiveCameraPage() {
             </div>
 
             <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-[11px] text-blue-800">
-              ℹ️ Video is processed in real time and aggregates into discrete 1-minute historical records.
+              Video is processed in real time and aggregates into discrete 1-minute historical records.
             </div>
           </div>
         </div>

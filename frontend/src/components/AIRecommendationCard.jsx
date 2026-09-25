@@ -3,6 +3,7 @@ import { Bot, Sparkles, Clock, Cpu } from 'lucide-react';
 
 export default function AIRecommendationCard({ 
   recommendation, 
+  trafficData = {},
   intervalSecondsRemaining,
   intervalProgress = 0,
   congestionLevel = 'LOW' 
@@ -14,9 +15,29 @@ export default function AIRecommendationCard({
   };
 
   const priority = (recommendation?.priority || congestionLevel || 'LOW').toUpperCase();
-  const summary = recommendation?.summary || "Analyzing vehicle dynamics and traffic velocity across corridor...";
-  const reason = recommendation?.reason || "Flow velocity and road occupancy are within nominal limits.";
-  const rec = recommendation?.recommendation || "Corridor is moving smoothly. Maintain baseline automated signal cycle.";
+  const vehicles = trafficData.total_vehicles || 0;
+  const occupancy = trafficData.road_occupancy || 0;
+  const movement = trafficData.average_movement || 0;
+  const fallback = priority === 'HIGH'
+    ? {
+        summary: `${vehicles} vehicles are creating a high-density corridor condition.`,
+        reason: `Road occupancy is ${occupancy}% with movement at ${movement} px/s.`,
+        recommendation: 'Extend the main corridor green phase and deploy traffic control support at the next junction.',
+      }
+    : priority === 'MEDIUM'
+      ? {
+          summary: `${vehicles} vehicles indicate moderate pressure on the active corridor.`,
+          reason: `Road occupancy is ${occupancy}% and movement is ${movement} px/s.`,
+          recommendation: 'Monitor the corridor and prepare adaptive signal timing if occupancy continues to rise.',
+        }
+      : {
+          summary: `${vehicles} vehicles are moving through the corridor at a stable level.`,
+          reason: `Road occupancy is ${occupancy}% with movement at ${movement} px/s.`,
+          recommendation: 'Maintain baseline signal timing and continue monitoring corridor conditions.',
+        };
+  const summary = recommendation?.summary || fallback.summary;
+  const reason = recommendation?.reason || fallback.reason;
+  const rec = recommendation?.recommendation || fallback.recommendation;
   const source = recommendation?.source || "FALLBACK";
 
   return (

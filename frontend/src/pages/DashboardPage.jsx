@@ -109,8 +109,33 @@ export default function DashboardPage({ onNavigateTab }) {
 
   const congColor = congLevel === 'HIGH' ? 'red' : (congLevel === 'MEDIUM' ? 'yellow' : 'green');
 
+  const recommendationData = telemetry.latest_record
+    ? {
+        summary: telemetry.latest_record.ai_summary,
+        reason: telemetry.latest_record.ai_reason,
+        recommendation: telemetry.latest_record.ai_recommendation,
+        priority: telemetry.latest_record.priority,
+      }
+    : telemetry.ai_summary
+      ? {
+          summary: telemetry.ai_summary,
+          reason: telemetry.ai_reason,
+          recommendation: telemetry.ai_recommendation,
+          priority: telemetry.priority || congLevel,
+        }
+      : null;
+
   return (
     <div className="space-y-5">
+      <section className="bg-white border border-sky-200 rounded-2xl px-6 py-5 text-center shadow-xs">
+        <h1 className="text-2xl md:text-3xl font-black tracking-tight text-black">
+          Smart Traffic Congestion Prediction System
+        </h1>
+        <p className="mt-1.5 text-sm text-sky-700">
+          Real-time traffic intelligence for safer, faster, and better-connected corridors.
+        </p>
+      </section>
+
       {/* Red Blinking Alert Banner */}
       <RedBlinkingAlert
         activeEvent={activeEvent}
@@ -329,23 +354,8 @@ export default function DashboardPage({ onNavigateTab }) {
         {/* Right 1 Col: AI Recommendation Card */}
         <div className="lg:col-span-1">
           <AIRecommendationCard
-            recommendation={
-              telemetry.latest_record
-                ? {
-                    summary: telemetry.latest_record.ai_summary,
-                    reason: telemetry.latest_record.ai_reason,
-                    recommendation: telemetry.latest_record.ai_recommendation,
-                    priority: telemetry.latest_record.priority,
-                  }
-                : (telemetry.ai_summary
-                ? {
-                    summary: telemetry.ai_summary,
-                    reason: telemetry.ai_reason,
-                    recommendation: telemetry.ai_recommendation,
-                    priority: telemetry.priority || congLevel,
-                  }
-                : null)
-            }
+            recommendation={recommendationData}
+            trafficData={telemetry}
             intervalSecondsRemaining={telemetry.interval_seconds_remaining}
             intervalProgress={telemetry.interval_progress}
             congestionLevel={congLevel}

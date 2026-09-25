@@ -5,9 +5,25 @@
     @apply bg-slate-50 text-slate-900 antialiased min-h-screen font-sans;
     margin: 0;
     padding: 0;
-    background-color: #f8fafc;
-    color: #0f172a;
+    background-color: #ffffff;
+    color: #000000;
   }
+}
+
+/* Keep the operational surfaces white with black and sky-blue accents. */
+@layer utilities {
+  .bg-slate-50, .bg-slate-100, .bg-slate-200 { background-color: #ffffff; }
+  .bg-slate-900, .bg-slate-950 { background-color: #ffffff; }
+  .bg-emerald-50, .bg-emerald-100, .bg-amber-50, .bg-amber-100,
+  .bg-red-50, .bg-red-100 { background-color: #f0f9ff; }
+  .text-slate-400, .text-slate-500, .text-slate-600, .text-slate-700,
+  .text-slate-800, .text-slate-900 { color: #000000; }
+  .text-emerald-600, .text-emerald-700, .text-emerald-800,
+  .text-amber-600, .text-amber-700, .text-amber-800,
+  .text-red-600, .text-red-700, .text-red-800 { color: #0369a1; }
+  .border-slate-100, .border-slate-200, .border-slate-300,
+  .border-emerald-200, .border-amber-200, .border-red-200 { border-color: #bae6fd; }
+  .bg-emerald-500, .bg-amber-500, .bg-red-500, .bg-red-600 { background-color: #0284c7; }
 }
 
 /* Professional Enterprise Red Alert Blinking Animation */

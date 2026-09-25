@@ -122,7 +122,7 @@ class VideoProcessingService:
             return {"status": "stopped"}
 
     def _stop_internal(self):
-        if self.is_running:
+        if event_manager.frame_buffer:
             try:
                 event_manager.flush_current_buffer(force=False)
             except Exception as e:

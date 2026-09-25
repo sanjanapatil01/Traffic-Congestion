@@ -11,6 +11,13 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 Base = declarative_base()
 
+def serialize_timestamp(value):
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return f"{value.isoformat()}Z"
+    return value.astimezone(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+
 class TrafficEvent(Base):
     __tablename__ = 'traffic_events'
 
@@ -41,7 +48,7 @@ class TrafficEvent(Base):
             "id": self.id,
             "camera_id": self.camera_id,
             "input_type": self.input_type,
-            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "timestamp": serialize_timestamp(self.timestamp),
             "cars": self.cars,
             "motorcycles": self.motorcycles,
             "buses": self.buses,
@@ -56,9 +63,9 @@ class TrafficEvent(Base):
             "ai_recommendation": self.ai_recommendation or "",
             "priority": self.priority,
             "status": self.status,
-            "acknowledged_at": self.acknowledged_at.isoformat() if self.acknowledged_at else None,
-            "closed_at": self.closed_at.isoformat() if self.closed_at else None,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "acknowledged_at": serialize_timestamp(self.acknowledged_at),
+            "closed_at": serialize_timestamp(self.closed_at),
+            "created_at": serialize_timestamp(self.created_at)
         }
 
 class DatabaseManager:
@@ -260,7 +267,7 @@ class DatabaseManager:
 
                 trend.append({
                     "time": e.timestamp.strftime("%H:%M") if e.timestamp else "00:00",
-                    "timestamp": e.timestamp.isoformat() if e.timestamp else None,
+                    "timestamp": serialize_timestamp(e.timestamp),
                     "total_vehicles": e.total_vehicles,
                     "congestion_level": e.congestion_level,
                     "numeric_level": 1 if lvl == "LOW" else (2 if lvl == "MEDIUM" else 3),

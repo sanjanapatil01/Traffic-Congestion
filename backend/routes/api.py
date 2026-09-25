@@ -118,6 +118,9 @@ def analyze_full_video_route():
 @api_bp.route('/analysis/stop', methods=['POST'])
 def stop_analysis():
     res = video_service.stop_analysis()
+    saved = event_manager.flush_current_buffer(force=False)
+    if saved:
+        res["record"] = saved
     return jsonify(res)
 
 # 4. Pause Analysis
